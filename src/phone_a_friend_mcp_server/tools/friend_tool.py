@@ -17,6 +17,8 @@ class PhoneAFriendTool(BaseTool):
     """
     Phone-a-Friend: Consult an external AI for critical thinking and complex reasoning.
 
+    ⚠️  ONLY USE WHEN EXPLICITLY REQUESTED BY USER ⚠️
+
     This tool sends your problem to a highly capable external AI model via OpenRouter for deep analysis.
     The external AI is very smart but has NO MEMORY of previous conversations, so you must provide
     ALL relevant context in your request.
@@ -41,7 +43,9 @@ class PhoneAFriendTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return """Phone-a-Friend: Consult an external AI for critical thinking and complex reasoning.
+        return """🚨 ONLY USE WHEN EXPLICITLY REQUESTED: This tool should ONLY be used when the user specifically asks you to "phone a friend" or requests external AI consultation. Do NOT use this tool automatically or suggest using it unless the user explicitly requests it.
+
+Phone-a-Friend: Consult an external AI for critical thinking and complex reasoning.
 
 This tool sends your problem to a highly capable external AI model for deep analysis.
 The external AI is very smart but has NO MEMORY of previous conversations, so you must provide
