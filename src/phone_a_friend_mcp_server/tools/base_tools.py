@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 from phone_a_friend_mcp_server.config import PhoneAFriendConfig
 
@@ -11,7 +11,7 @@ class BaseTool(ABC):
         self.config = config
 
     @abstractmethod
-    async def run(self, **kwargs) -> Dict[str, Any]:
+    async def run(self, **kwargs) -> dict[str, Any]:
         """Execute the tool with given parameters."""
         pass
 
@@ -29,6 +29,6 @@ class BaseTool(ABC):
 
     @property
     @abstractmethod
-    def parameters(self) -> Dict[str, Any]:
+    def parameters(self) -> dict[str, Any]:
         """Tool parameters schema."""
         pass

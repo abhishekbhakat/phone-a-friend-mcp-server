@@ -1,20 +1,16 @@
 import os
-import pytest
 import tempfile
 
+import pytest
+
 from phone_a_friend_mcp_server.config import PhoneAFriendConfig
-from phone_a_friend_mcp_server.tools.friend_tool import PhoneAFriendTool
 from phone_a_friend_mcp_server.tools.fax_tool import FaxAFriendTool
 
 
 @pytest.fixture
 def config():
     """Create a mock config for testing."""
-    return PhoneAFriendConfig(
-        api_key="test-key",
-        provider="openai",
-        model="gpt-4"
-    )
+    return PhoneAFriendConfig(api_key="test-key", provider="openai", model="gpt-4")
 
 
 @pytest.mark.asyncio
@@ -31,7 +27,7 @@ async def test_fax_a_friend_tool(config):
             result = await tool.run(
                 all_related_context="We have a complex software architecture decision to make",
                 any_additional_context="The team has experience with microservices",
-                task="Help us choose between monolith and microservices architecture"
+                task="Help us choose between monolith and microservices architecture",
             )
 
             # Check result structure
@@ -47,7 +43,7 @@ async def test_fax_a_friend_tool(config):
             assert os.path.exists("fax_a_friend.md")
 
             # Check file content
-            with open("fax_a_friend.md", "r", encoding="utf-8") as f:
+            with open("fax_a_friend.md", encoding="utf-8") as f:
                 content = f.read()
                 assert "=== TASK ===" in content
                 assert "=== ALL RELATED CONTEXT ===" in content
@@ -70,16 +66,13 @@ async def test_fax_a_friend_tool_without_additional_context(config):
         try:
             os.chdir(temp_dir)
 
-            result = await tool.run(
-                all_related_context="Simple problem context",
-                task="Simple task"
-            )
+            result = await tool.run(all_related_context="Simple problem context", task="Simple task")
 
             assert result["status"] == "success"
             assert os.path.exists("fax_a_friend.md")
 
             # Check file content doesn't include additional context section
-            with open("fax_a_friend.md", "r", encoding="utf-8") as f:
+            with open("fax_a_friend.md", encoding="utf-8") as f:
                 content = f.read()
                 assert "=== TASK ===" in content
                 assert "=== ALL RELATED CONTEXT ===" in content
@@ -104,15 +97,12 @@ async def test_fax_a_friend_tool_overwrite(config):
             with open("fax_a_friend.md", "w") as f:
                 f.write("Old content")
 
-            result = await tool.run(
-                all_related_context="New context",
-                task="New task"
-            )
+            result = await tool.run(all_related_context="New context", task="New task")
 
             assert result["status"] == "success"
 
             # Check file was overwritten
-            with open("fax_a_friend.md", "r", encoding="utf-8") as f:
+            with open("fax_a_friend.md", encoding="utf-8") as f:
                 content = f.read()
                 assert "Old content" not in content
                 assert "New context" in content

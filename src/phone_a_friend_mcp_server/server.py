@@ -55,8 +55,7 @@ async def serve(config: PhoneAFriendConfig) -> None:
             logger.info(f"Calling tool: {name} with arguments: {arguments}")
             tool = tool_manager.get_tool(name)
             result = await tool.run(**arguments)
-            
-            # Format the result as a nice text response
+
             if isinstance(result, dict):
                 formatted_result = ""
                 for key, value in result.items():
@@ -69,7 +68,7 @@ async def serve(config: PhoneAFriendConfig) -> None:
                 return [TextContent(type="text", text=formatted_result.strip())]
             else:
                 return [TextContent(type="text", text=str(result))]
-                
+
         except Exception as e:
             logger.error("Tool execution failed: %s", e)
             error_msg = f"Error executing tool '{name}': {str(e)}"

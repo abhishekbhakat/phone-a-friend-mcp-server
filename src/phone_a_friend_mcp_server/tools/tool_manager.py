@@ -1,11 +1,9 @@
-from typing import Dict, List
-
 from mcp.types import Tool
 
 from phone_a_friend_mcp_server.config import PhoneAFriendConfig
 from phone_a_friend_mcp_server.tools.base_tools import BaseTool
-from phone_a_friend_mcp_server.tools.friend_tool import PhoneAFriendTool
 from phone_a_friend_mcp_server.tools.fax_tool import FaxAFriendTool
+from phone_a_friend_mcp_server.tools.friend_tool import PhoneAFriendTool
 
 
 class ToolManager:
@@ -13,7 +11,7 @@ class ToolManager:
 
     def __init__(self, config: PhoneAFriendConfig):
         self.config = config
-        self._tools: Dict[str, BaseTool] = {}
+        self._tools: dict[str, BaseTool] = {}
         self._initialize_tools()
 
     def _initialize_tools(self):
@@ -32,18 +30,14 @@ class ToolManager:
             raise ValueError(f"Tool '{name}' not found")
         return self._tools[name]
 
-    def list_tools(self) -> List[Tool]:
+    def list_tools(self) -> list[Tool]:
         """List all available tools in MCP format."""
         mcp_tools = []
         for tool in self._tools.values():
-            mcp_tool = Tool(
-                name=tool.name,
-                description=tool.description,
-                inputSchema=tool.parameters
-            )
+            mcp_tool = Tool(name=tool.name, description=tool.description, inputSchema=tool.parameters)
             mcp_tools.append(mcp_tool)
         return mcp_tools
 
-    def get_tool_names(self) -> List[str]:
+    def get_tool_names(self) -> list[str]:
         """Get list of all tool names."""
         return list(self._tools.keys())

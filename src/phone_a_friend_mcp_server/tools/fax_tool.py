@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict
+from typing import Any
 
 import aiofiles
 
@@ -31,7 +31,8 @@ class FaxAFriendTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return """🚨 ONLY USE WHEN EXPLICITLY REQUESTED: This tool should ONLY be used when the user specifically asks you to "fax a friend" or requests manual AI consultation. Do NOT use this tool automatically or suggest using it unless the user explicitly requests it.
+        return """🚨 ONLY USE WHEN EXPLICITLY REQUESTED: This tool should ONLY be used when the user specifically asks you to "fax a friend" or requests manual AI consultation.
+Do NOT use this tool automatically or suggest using it unless the user explicitly requests it.
 
 Fax-a-Friend: Generate a master prompt file for manual AI consultation.
 
@@ -49,75 +50,59 @@ After running this tool, you'll need to manually copy the generated prompt and p
 into your preferred AI interface."""
 
     @property
-    def parameters(self) -> Dict[str, Any]:
+    def parameters(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
                 "all_related_context": {
                     "type": "string",
-                    "description": """ALL context directly related to the problem. Include:
-- Background information and history
-- Previous attempts and their outcomes
-- Stakeholders and their perspectives
-- Constraints, requirements, and limitations
-- Current situation and circumstances
-- Any relevant data, metrics, or examples
-- Timeline and deadlines
-- Success criteria and goals
-
-Be comprehensive - the external AI has no memory and needs complete context."""
+                    "description": (
+                        "MANDATORY. Everything the friend AI needs to see:\n"
+                        "- The full <file_tree> block (ASCII tree).\n"
+                        '- One or more <file="…"> blocks with the current code.\n'
+                        "- Known constraints (Python version, allowed deps, runtime limits, etc.).\n"
+                        "- Any failing test output or traceback.\n"
+                        "If it's not here, the friend AI can't use it."
+                    ),
                 },
                 "any_additional_context": {
                     "type": "string",
-                    "description": """ANY additional context that might be helpful. Include:
-- Relevant documentation, specifications, or guidelines
-- Industry standards or best practices
-- Similar cases or precedents
-- Technical details or domain knowledge
-- Regulatory or compliance requirements
-- Tools, resources, or technologies available
-- Budget or resource constraints
-- Organizational context or culture
-
-The external AI is smart but not knowledgeable - provide all relevant information."""
+                    "description": (
+                        "Optional extras that help but aren't core code:\n"
+                        "- Style guides, architecture docs, API specs.\n"
+                        "- Performance targets, security rules, deployment notes.\n"
+                        "- Similar past solutions or reference snippets.\n"
+                        "Skip it if there's nothing useful."
+                    ),
                 },
                 "task": {
                     "type": "string",
-                    "description": """The specific task or question for the external AI. Be clear and specific about:
-- What exactly you need help with
-- What type of analysis or reasoning you want
-- What format you prefer for the response
-- What decisions need to be made
-- What problems need to be solved
-
-Examples:
-- "Analyze this situation and recommend the best approach"
-- "Help me think through the pros and cons of each option"
-- "Design a step-by-step plan to solve this problem"
-- "Identify potential risks and mitigation strategies"
-- "Provide a critical analysis of this proposal"""
-                }
+                    "description": (
+                        "Plain-English ask. Be surgical.\n"
+                        "Good examples:\n"
+                        "- Refactor synchronous Flask app to async Quart. Keep py3.10.\n"
+                        "- Identify and fix memory leak in src/cache.py.\n"
+                        "- Add unit tests for edge cases in utils/math.py.\n"
+                        'Bad: vague stuff like "make code better".'
+                    ),
+                },
             },
-            "required": ["all_related_context", "task"]
+            "required": ["all_related_context", "task"],
         }
 
-    async def run(self, **kwargs) -> Dict[str, Any]:
+    async def run(self, **kwargs) -> dict[str, Any]:
         all_related_context = kwargs.get("all_related_context", "")
         any_additional_context = kwargs.get("any_additional_context", "")
         task = kwargs.get("task", "")
 
         # Create master prompt using the same logic as phone_a_friend
-        master_prompt = self._create_master_prompt(
-            all_related_context,
-            any_additional_context,
-            task
-        )
+        master_prompt = self._create_master_prompt(all_related_context, any_additional_context, task)
 
         try:
             # Write to fax_a_friend.md in current working directory
             file_path = "fax_a_friend.md"
-            
-            async with aiofiles.open(file_path, 'w', encoding='utf-8') as f:
+
+            async with aiofiles.open(file_path, "w", encoding="utf-8") as f:
                 await f.write(master_prompt)
 
             # Get absolute path for user reference
@@ -130,23 +115,17 @@ Examples:
                 "prompt_length": len(master_prompt),
                 "context_length": len(all_related_context + any_additional_context),
                 "task": task,
-                "instructions": self._get_manual_workflow_instructions(abs_path)
+                "instructions": self._get_manual_workflow_instructions(abs_path),
             }
 
         except Exception as e:
-            return {
-                "status": "failed",
-                "error": str(e),
-                "file_path": "fax_a_friend.md",
-                "context_length": len(all_related_context + any_additional_context),
-                "task": task
-            }
+            return {"status": "failed", "error": str(e), "file_path": "fax_a_friend.md", "context_length": len(all_related_context + any_additional_context), "task": task}
 
     def _create_master_prompt(self, all_related_context: str, any_additional_context: str, task: str) -> str:
-        """Create a comprehensive prompt for the external AI (same logic as phone_a_friend)."""
+        """Create a comprehensive prompt identical to PhoneAFriendTool's version."""
 
         prompt_parts = [
-            "You are a highly capable AI assistant being consulted for critical thinking and complex reasoning.",
+            "You are a highly capable AI assistant being consulted for critical thinking, complex reasoning and pair-programming caliber coding help.",
             "You have no memory of previous conversations, so all necessary context is provided below.",
             "",
             "=== TASK ===",
@@ -157,24 +136,26 @@ Examples:
         ]
 
         if any_additional_context.strip():
-            prompt_parts.extend([
-                "",
-                "=== ADDITIONAL CONTEXT ===",
-                any_additional_context,
-            ])
+            prompt_parts.extend(
+                [
+                    "",
+                    "=== ADDITIONAL CONTEXT ===",
+                    any_additional_context,
+                ]
+            )
 
-        prompt_parts.extend([
-            "",
-            "=== INSTRUCTIONS ===",
-            "- Analyze the situation thoroughly using the provided context",
-            "- Think step-by-step and show your reasoning process",
-            "- Consider multiple perspectives and potential solutions",
-            "- Identify key insights, risks, and opportunities",
-            "- Provide actionable recommendations based on your analysis",
-            "- Be specific and practical in your response",
-            "",
-            "Please provide your analysis and recommendations:"
-        ])
+        prompt_parts.extend(
+            [
+                "",
+                "=== INSTRUCTIONS ===",
+                "- Analyze the code and requirements step-by-step.",
+                "- Show your reasoning and propose concrete changes.",
+                '- Provide updated code using the XML format (<file_tree> plus <file="…"> blocks).',
+                "- Be explicit and practical.",
+                "",
+                "Please provide your analysis and updated code:",
+            ]
+        )
 
         return "\n".join(prompt_parts)
 

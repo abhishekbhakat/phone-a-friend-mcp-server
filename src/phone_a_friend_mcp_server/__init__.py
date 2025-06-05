@@ -27,12 +27,12 @@ def main(verbose: int, api_key: str = None, model: str = None, provider: str = N
 
     # Read environment variables with proper precedence
     config_api_key = (
-        api_key or
-        os.environ.get("OPENROUTER_API_KEY") or
-        os.environ.get("OPENAI_API_KEY") or
-        os.environ.get("ANTHROPIC_API_KEY") or
-        os.environ.get("GOOGLE_API_KEY") or
-        os.environ.get("GEMINI_API_KEY")
+        api_key
+        or os.environ.get("OPENROUTER_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+        or os.environ.get("ANTHROPIC_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("GEMINI_API_KEY")
     )
     config_model = model or os.environ.get("PHONE_A_FRIEND_MODEL")
     config_provider = provider or os.environ.get("PHONE_A_FRIEND_PROVIDER")
@@ -40,12 +40,7 @@ def main(verbose: int, api_key: str = None, model: str = None, provider: str = N
 
     # Initialize configuration
     try:
-        config = PhoneAFriendConfig(
-            api_key=config_api_key,
-            model=config_model,
-            provider=config_provider,
-            base_url=config_base_url
-        )
+        config = PhoneAFriendConfig(api_key=config_api_key, model=config_model, provider=config_provider, base_url=config_base_url)
     except ValueError as e:
         click.echo(f"Configuration error: {e}", err=True)
         sys.exit(1)
