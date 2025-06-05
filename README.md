@@ -39,12 +39,6 @@ Primary AI → Phone-a-Friend MCP → OpenRouter → External AI (GPT-4, Claude,
 - Critical decision-making with high stakes
 - Problems requiring multiple perspectives
 
-**Not needed for:**
-- Simple factual questions
-- Basic reasoning tasks
-- Quick responses
-- Well-defined procedural tasks
-
 ## Installation 🚀
 
 1. Clone the repository:
@@ -58,119 +52,74 @@ cd phone-a-friend-mcp-server
 uv pip install -e .
 ```
 
-3. Configure your preferred AI provider:
+3. Configure API access (choose one method):
 
-**OpenRouter (recommended - access to multiple models):**
+**Option A: Environment Variables**
 ```bash
 export OPENROUTER_API_KEY="your-openrouter-key"
-# Model will auto-select based on provider
-```
-
-**OpenAI:**
-```bash
+# OR
 export OPENAI_API_KEY="your-openai-key"
-# Uses latest available model by default
-```
-
-**Anthropic:**
-```bash
+# OR
 export ANTHROPIC_API_KEY="your-anthropic-key"
-# Uses latest available model by default
+# OR
+export GOOGLE_API_KEY="your-google-key"
 ```
 
-**Google/Gemini:**
+**Option B: CLI Arguments**
 ```bash
-export GOOGLE_API_KEY="your-google-key"  # or GEMINI_API_KEY
-# Uses latest available model by default
+phone-a-friend-mcp-server --api-key "your-api-key" --provider openai
 ```
 
 ## Usage 💡
 
-### Command Line
+### Command Line Options
 ```bash
-# Start the server
-phone-a-friend-mcp-server
 
-# With verbose logging
-phone-a-friend-mcp-server -v
+# Custom base URL (if needed)
+phone-a-friend-mcp-server --base-url "https://custom-api.example.com"
 
-# With specific provider (uses optimal model automatically)
-phone-a-friend-mcp-server --provider anthropic
-phone-a-friend-mcp-server --provider google
-
-# Override with custom model if needed
-phone-a-friend-mcp-server --provider anthropic --model "your-preferred-model"
+# Combined example
+phone-a-friend-mcp-server --api-key "sk-..." --provider openai --model "o3" -v
 ```
 
-### Environment Variables
+### Environment Variables (Optional)
 ```bash
-# Auto-detects provider based on available API keys
-export OPENROUTER_API_KEY="your-openrouter-key"  # Preferred
-export OPENAI_API_KEY="your-openai-key"          # Default fallback
-export ANTHROPIC_API_KEY="your-anthropic-key"    # Direct Anthropic
-export GOOGLE_API_KEY="your-google-key"          # Google/Gemini
 
-# Optional overrides (only if you want to override auto-selection)
+# Optional model overrides
 export PHONE_A_FRIEND_MODEL="your-preferred-model"
 export PHONE_A_FRIEND_PROVIDER="your-preferred-provider"
+export PHONE_A_FRIEND_BASE_URL="https://custom-api.example.com"
 ```
 
 ## Model Selection 🤖
 
-The system automatically selects the most capable model for each provider:
-- **OpenAI**: Latest reasoning model
-- **Anthropic**: Latest Claude model
-- **Google**: Latest Gemini Pro model
-- **OpenRouter**: Access to latest models from all providers
+Default reasoning models to be selected:
+- **OpenAI**: o3
+- **Anthropic**: Claude 4 Opus
+- **Google**: Gemini 2.5 Pro Preview 05-06
+- **OpenRouter**: For other models like Deepseek or Qwen
 
 You can override the auto-selection by setting `PHONE_A_FRIEND_MODEL` environment variable or using the `--model` CLI option.
 
 ## Available Tools 🛠️
 
 ### phone_a_friend
-Consult an external AI for critical thinking and complex reasoning via OpenRouter.
+📞 Consult external AI for critical thinking and complex reasoning. Makes API calls to get responses.
 
-**IMPORTANT:** The external AI is very smart but has NO MEMORY of previous conversations.
-The quality of the response depends ENTIRELY on the quality and completeness of the context you provide.
+### fax_a_friend
+📠 Generate master prompt file for manual AI consultation. Creates file for copy-paste workflow.
 
-**Parameters:**
-- `all_related_context` (required): ALL context directly related to the problem. Include:
-  - Background information and history
-  - Previous attempts and their outcomes
-  - Stakeholders and their perspectives
-  - Constraints, requirements, and limitations
-  - Current situation and circumstances
-  - Any relevant data, metrics, or examples
-  - Timeline and deadlines
-  - Success criteria and goals
+**Parameters (both tools):**
+- `all_related_context` (required): All context related to the problem
+- `any_additional_context` (optional): Additional helpful context
+- `task` (required): Specific task or question for the AI
 
-- `any_additional_context` (optional): ANY additional context that might be helpful. Include:
-  - Relevant documentation, specifications, or guidelines
-  - Industry standards or best practices
-  - Similar cases or precedents
-  - Technical details or domain knowledge
-  - Regulatory or compliance requirements
-  - Tools, resources, or technologies available
-  - Budget or resource constraints
-  - Organizational context or culture
 
-- `task` (required): The specific task or question for the external AI. Be clear about:
-  - What exactly you need help with
-  - What type of analysis or reasoning you want
-  - What format you prefer for the response
-  - What decisions need to be made
-  - What problems need to be solved
+## Use Cases 🎯
 
-**Example Usage:**
-```
-all_related_context: "We're a SaaS startup with 50 employees. Our customer churn rate increased from 5% to 12% over the last quarter. We recently changed our pricing model and added new features. Customer support tickets increased 40%. Our main competitors are offering similar features at lower prices."
-
-any_additional_context: "Industry benchmark for SaaS churn is 6-8%. Our pricing increased by 30%. New features include AI analytics and advanced reporting. Customer feedback mentions complexity and cost concerns."
-
-task: "Analyze the churn increase and provide a comprehensive action plan to reduce it back to 5% within 6 months. Include specific strategies, timeline, and success metrics."
-```
-
-The system will automatically route this to the most capable AI model available based on your configured provider.
+1. In-depth Reasoning for Vibe Coding
+2. For complex algorithms, data structures, or mathematical computations
+3. Frontend Development with React, Vue, CSS, or modern frontend frameworks
 
 ## Claude Desktop Configuration 🖥️
 
@@ -189,7 +138,6 @@ To use Phone-a-Friend MCP server with Claude Desktop, add this configuration to 
     "phone-a-friend": {
       "command": "uvx",
       "args": [
-        "run",
         "--refresh",
         "phone-a-friend-mcp-server",
       ],
@@ -218,70 +166,6 @@ You can configure different AI providers directly in the Claude Desktop config:
     }
   }
 }
-```
-
-**Alternative Providers:**
-```json
-{
-  "mcpServers": {
-    "phone-a-friend-openai": {
-      "command": "phone-a-friend-mcp-server",
-      "env": {
-        "OPENAI_API_KEY": "your-openai-api-key"
-      }
-    },
-    "phone-a-friend-anthropic": {
-      "command": "phone-a-friend-mcp-server",
-      "env": {
-        "ANTHROPIC_API_KEY": "your-anthropic-api-key"
-      }
-    },
-    "phone-a-friend-google": {
-      "command": "phone-a-friend-mcp-server",
-      "env": {
-        "GOOGLE_API_KEY": "your-google-api-key"
-      }
-    }
-  }
-}
-```
-
-### Setup Steps
-
-1. **Install Phone-a-Friend MCP Server** (see Installation section above)
-2. **Open Claude Desktop Settings** → Developer → Edit Config
-3. **Add the configuration** (choose one of the options above)
-4. **Replace paths and API keys** with your actual values
-5. **Restart Claude Desktop**
-6. **Look for the 🔨 hammer icon** in the input box to confirm the server is connected
-
-### Troubleshooting
-
-If the server doesn't appear in Claude Desktop:
-
-1. **Check logs**:
-   - macOS: `~/Library/Logs/Claude/mcp*.log`
-   - Windows: `%APPDATA%\Claude\logs\mcp*.log`
-
-2. **Verify paths** are absolute and correct
-3. **Test manually** in terminal:
-   ```bash
-   phone-a-friend-mcp-server -v
-   ```
-4. **Restart Claude Desktop** completely
-5. **Check API keys** are valid and have sufficient credits
-
-## Development 🔧
-
-### Running Tests
-```bash
-pytest
-```
-
-### Code Formatting
-```bash
-ruff format .
-ruff check .
 ```
 
 ## License 📄
