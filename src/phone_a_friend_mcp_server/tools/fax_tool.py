@@ -15,14 +15,6 @@ class FaxAFriendTool(BaseTool):
     This tool creates a comprehensive master prompt and saves it to a file for manual
     copy-paste into external AI interfaces. It uses the same prompt structure as the
     phone_a_friend tool but requires manual intervention to get the AI response.
-
-    Use this tool when:
-    - The automated phone_a_friend tool is unavailable
-    - You want to manually control which AI service to use
-    - You need to consult multiple AI services with the same prompt
-    - API access is limited or unavailable
-
-    The tool generates a file that you can manually copy and paste into any AI interface.
     """
 
     @property

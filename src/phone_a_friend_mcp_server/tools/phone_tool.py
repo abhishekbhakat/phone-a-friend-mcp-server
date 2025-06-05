@@ -18,22 +18,8 @@ class PhoneAFriendTool(BaseTool):
 
     ⚠️  ONLY USE WHEN EXPLICITLY REQUESTED BY USER ⚠️
 
-    This tool sends your problem to a highly capable external AI model via OpenRouter for deep analysis.
-    The external AI is very smart but has NO MEMORY of previous conversations, so you must provide
-    ALL relevant context in your request.
-
-    IMPORTANT: The quality of the external AI's response depends ENTIRELY on the quality and
-    completeness of the context you provide. Include everything the AI needs to understand
-    and solve your problem effectively.
-
-    Use this tool when you need:
-    - Deep critical thinking beyond your immediate capabilities
-    - Long context reasoning with extensive information
-    - Multi-step analysis requiring external perspective
-    - Complex problem solving that benefits from a fresh viewpoint
-
-    The external AI is intelligent but not knowledgeable about current events, specific
-    documentation, or domain-specific information unless you provide it.
+    This tool sends your problem to an external AI model for analysis and gets back a response.
+    The external AI has no memory of previous conversations, so you must provide all relevant context.
     """
 
     @property
