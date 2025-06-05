@@ -23,7 +23,12 @@ class FaxAFriendTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return """🚨  **USE ONLY WHEN USER ASKS TO "fax a friend".**
+        return """🚨🚨🚨 **EXCLUSIVE USE ONLY** 🚨🚨🚨
+
+**USE ONLY WHEN USER EXPLICITLY ASKS TO "fax a friend"**
+**DO NOT use as fallback if phone_a_friend fails**
+**DO NOT auto-switch between fax/phone tools**
+**If this tool fails, ask user for guidance - do NOT try phone_a_friend**
 
 Purpose: pair-programming caliber *coding help* — reviews, debugging,
 refactors, design, migrations.
