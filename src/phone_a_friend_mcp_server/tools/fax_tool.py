@@ -23,23 +23,49 @@ class FaxAFriendTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return """🚨 ONLY USE WHEN EXPLICITLY REQUESTED: This tool should ONLY be used when the user specifically asks you to "fax a friend" or requests manual AI consultation.
-Do NOT use this tool automatically or suggest using it unless the user explicitly requests it.
+        return """🚨  **USE ONLY WHEN USER ASKS TO "fax a friend".**
 
-Fax-a-Friend: Generate a master prompt file for manual AI consultation.
+Purpose: pair-programming caliber *coding help* — reviews, debugging,
+refactors, design, migrations.
 
-This tool creates a comprehensive master prompt and saves it to 'fax_a_friend.md' for manual
-copy-paste into external AI interfaces. It uses the same prompt structure as the
-phone_a_friend tool but requires manual intervention to get the AI response.
+Hard restrictions:
+  • Generated prompt includes *only* the two context blocks you send.
+  • No memory, no internet, no tools.
+  • You must spell out every fact it should rely on.
 
-Use this tool when:
-- The automated phone_a_friend tool is unavailable
-- You want to manually control which AI service to use
-- You need to consult multiple AI services with the same prompt
-- API access is limited or unavailable
+Required I/O format:
+```
+<file_tree>
+.
+├── Dockerfile
+├── some_doc_file.md
+├── LICENSE
+├── pyproject.toml
+├── README.md
+├── src
+│   └── some_module
+│       ├── **init**.py
+│       ├── **main**.py
+│       ├── client
+│       │   └── **init**.py
+│       ├── config.py
+│       ├── server.py
+│       └── tools
+│           ├── **init**.py
+│           ├── base_tools.py
+│           └── tool_manager.py
+├── tests
+│   ├── **init**.py
+│   └── test_tools.py
+└── uv.lock
+</file_tree>
 
-After running this tool, you'll need to manually copy the generated prompt and paste it
-into your preferred AI interface."""
+<file="src/some_module/server.py">
+# full source here …
+</file>
+```
+The generated prompt expects AI to reply in the same XML structure, adding or
+replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
 
     @property
     def parameters(self) -> dict[str, Any]:
