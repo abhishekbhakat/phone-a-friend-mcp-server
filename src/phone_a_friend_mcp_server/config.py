@@ -52,7 +52,9 @@ class PhoneAFriendConfig:
             "anthropic": "claude-4-opus",
             "google": "gemini-2.5-pro-preview-05-06"
         }
-        return models.get(self.provider, "o3")
+        if self.provider not in models:
+            raise ValueError(f"Unknown provider: {self.provider}. Supported providers: {list(models.keys())}")
+        return models[self.provider]
 
 
 
