@@ -28,6 +28,9 @@ class FaxAFriendTool(BaseTool):
 Purpose: pair-programming caliber *coding help* — reviews, debugging,
 refactors, design, migrations.
 
+This tool creates a file for manual AI consultation. After file creation,
+wait for the user to return with the external AI's response.
+
 Hard restrictions:
   • Generated prompt includes *only* the two context blocks you send.
   • No memory, no internet, no tools.
