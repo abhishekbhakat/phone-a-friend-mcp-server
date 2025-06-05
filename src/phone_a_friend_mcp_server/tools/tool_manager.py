@@ -3,7 +3,7 @@ from mcp.types import Tool
 from phone_a_friend_mcp_server.config import PhoneAFriendConfig
 from phone_a_friend_mcp_server.tools.base_tools import BaseTool
 from phone_a_friend_mcp_server.tools.fax_tool import FaxAFriendTool
-from phone_a_friend_mcp_server.tools.friend_tool import PhoneAFriendTool
+from phone_a_friend_mcp_server.tools.phone_tool import PhoneAFriendTool
 
 
 class ToolManager:
