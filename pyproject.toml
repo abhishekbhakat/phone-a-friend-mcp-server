@@ -1,6 +1,6 @@
 [project]
 name = "phone-a-friend-mcp-server"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP Server for Phone-a-Friend assistance"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,7 +14,7 @@ dependencies = [
     "pydantic>=2.11.5",
     "pydantic-ai-slim[openai,anthropic,google]>=0.2.14",
     "click>=8.2.1",
-    "pyyaml>=6.0.0", # No newer version found in search results
+    "pyyaml>=6.0.0",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -31,16 +31,6 @@ Issues = "https://github.com/abhishekbhakat/phone-a-friend-mcp-server/issues"
 
 [project.scripts]
 phone-a-friend-mcp-server = "phone_a_friend_mcp_server.__main__:main"
-
-[project.optional-dependencies]
-dev = [
-    "build>=1.2.2.post1",
-    "pre-commit>=4.2.0",
-    "pytest>=8.3.4", # No newer version found in search results
-    "pytest-asyncio>=0.26.0",
-    "pytest-mock>=3.14.1",
-    "ruff>=0.11.12"
-]
 
 [build-system]
 requires = ["hatchling"]
@@ -78,3 +68,13 @@ lint.unfixable = []
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[dependency-groups]
+dev = [
+    "build>=1.2.2.post1",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.1",
+    "ruff>=0.11.12",
+]

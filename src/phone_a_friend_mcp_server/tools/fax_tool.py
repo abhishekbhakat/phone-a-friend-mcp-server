@@ -107,21 +107,34 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                         'Bad: vague stuff like "make code better".'
                     ),
                 },
+                "output_directory": {
+                    "type": "string",
+                    "description": (
+                        "Directory path where the fax_a_friend.md file will be created.\n"
+                        "Recommended: Use the user's current working directory for convenience.\n"
+                        "Must be a valid, writable directory path.\n"
+                        "Examples: '/tmp', '~/Documents', './output', '/Users/username/Desktop'"
+                    ),
+                },
             },
-            "required": ["all_related_context", "task"],
+            "required": ["all_related_context", "task", "output_directory"],
         }
 
     async def run(self, **kwargs) -> dict[str, Any]:
         all_related_context = kwargs.get("all_related_context", "")
         any_additional_context = kwargs.get("any_additional_context", "")
         task = kwargs.get("task", "")
+        output_directory = kwargs.get("output_directory", "")
 
         # Create master prompt using the same logic as phone_a_friend
         master_prompt = self._create_master_prompt(all_related_context, any_additional_context, task)
 
         try:
-            # Write to fax_a_friend.md in current working directory
-            file_path = "fax_a_friend.md"
+            # Validate and prepare output directory
+            output_dir = self._prepare_output_directory(output_directory)
+
+            # Create full file path
+            file_path = os.path.join(output_dir, "fax_a_friend.md")
 
             async with aiofiles.open(file_path, "w", encoding="utf-8") as f:
                 await f.write(master_prompt)
@@ -133,6 +146,7 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                 "status": "success",
                 "file_path": abs_path,
                 "file_name": "fax_a_friend.md",
+                "output_directory": output_dir,
                 "prompt_length": len(master_prompt),
                 "context_length": len(all_related_context + any_additional_context),
                 "task": task,
@@ -140,7 +154,7 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
             }
 
         except Exception as e:
-            return {"status": "failed", "error": str(e), "file_path": "fax_a_friend.md", "context_length": len(all_related_context + any_additional_context), "task": task}
+            return {"status": "failed", "error": str(e), "output_directory": output_directory, "context_length": len(all_related_context + any_additional_context), "task": task}
 
     def _create_master_prompt(self, all_related_context: str, any_additional_context: str, task: str) -> str:
         """Create a comprehensive prompt identical to PhoneAFriendTool's version."""
@@ -179,6 +193,27 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
         )
 
         return "\n".join(prompt_parts)
+
+    def _prepare_output_directory(self, output_directory: str) -> str:
+        """Validate and prepare the output directory."""
+        if not output_directory:
+            raise ValueError("output_directory parameter is required")
+
+        # Expand user path (~) and resolve relative paths
+        expanded_path = os.path.expanduser(output_directory)
+        resolved_path = os.path.abspath(expanded_path)
+
+        # Create directory if it doesn't exist
+        try:
+            os.makedirs(resolved_path, exist_ok=True)
+        except OSError as e:
+            raise ValueError(f"Cannot create directory '{resolved_path}': {e}")
+
+        # Check if directory is writable
+        if not os.access(resolved_path, os.W_OK):
+            raise ValueError(f"Directory '{resolved_path}' is not writable")
+
+        return resolved_path
 
     def _get_manual_workflow_instructions(self, file_path: str) -> str:
         """Generate clear instructions for the manual workflow."""
