@@ -160,19 +160,27 @@ Examples:
         """Create Pydantic-AI agent with appropriate provider."""
         if self.config.provider == "openrouter":
             # OpenRouter has its own dedicated provider
-            provider = OpenRouterProvider(api_key=self.config.api_key)
+            provider_kwargs = {"api_key": self.config.api_key}
+            if self.config.base_url:
+                provider_kwargs["base_url"] = self.config.base_url
+            provider = OpenRouterProvider(**provider_kwargs)
             model = OpenAIModel(self.config.model, provider=provider)
         elif self.config.provider == "anthropic":
             # Use Anthropic directly
-            provider = AnthropicProvider(api_key=self.config.api_key)
+            provider_kwargs = {"api_key": self.config.api_key}
+            provider = AnthropicProvider(**provider_kwargs)
             model = AnthropicModel(self.config.model, provider=provider)
         elif self.config.provider == "google":
             # Use Google/Gemini directly
-            provider = GoogleProvider(api_key=self.config.api_key)
+            provider_kwargs = {"api_key": self.config.api_key}
+            provider = GoogleProvider(**provider_kwargs)
             model = GoogleModel(self.config.model, provider=provider)
         else:
             # Default to OpenAI
-            provider = OpenAIProvider(api_key=self.config.api_key)
+            provider_kwargs = {"api_key": self.config.api_key}
+            if self.config.base_url:
+                provider_kwargs["base_url"] = self.config.base_url
+            provider = OpenAIProvider(**provider_kwargs)
             model = OpenAIModel(self.config.model, provider=provider)
 
         return Agent(model)

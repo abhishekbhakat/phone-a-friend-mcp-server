@@ -13,13 +13,13 @@ class PhoneAFriendConfig:
         Args:
             api_key: API key for external AI services
             model: Model to use (e.g., 'gpt-4', 'anthropic/claude-3.5-sonnet')
-            base_url: Base URL for API (auto-detected based on provider)
+            base_url: Custom base URL for API (optional, providers use defaults)
             provider: Provider type ('openai', 'openrouter', 'anthropic')
         """
         self.api_key = api_key
         self.provider = provider or self._detect_provider()
         self.model = model or self._get_default_model()
-        self.base_url = base_url or self._get_default_base_url()
+        self.base_url = base_url  # Only use if explicitly provided
 
         # Validate required configuration
         if not self.api_key:
@@ -54,15 +54,7 @@ class PhoneAFriendConfig:
         }
         return models.get(self.provider, "o3")
 
-    def _get_default_base_url(self) -> str:
-        """Get default base URL based on provider."""
-        urls = {
-            "openai": "https://api.openai.com/v1",
-            "openrouter": "https://openrouter.ai/api/v1",
-            "anthropic": "https://api.anthropic.com",
-            "google": "https://generativelanguage.googleapis.com"
-        }
-        return urls.get(self.provider, urls["openai"])
+
 
     def _get_env_var_name(self) -> str:
         """Get environment variable name for the provider."""
