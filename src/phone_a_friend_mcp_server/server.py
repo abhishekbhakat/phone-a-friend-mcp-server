@@ -12,6 +12,22 @@ from phone_a_friend_mcp_server.tools.tool_manager import ToolManager
 logger = logging.getLogger(__name__)
 
 
+def _format_tool_result(result: Any) -> str:
+    """Format tool result for display."""
+    if isinstance(result, dict):
+        formatted_result = ""
+        for key, value in result.items():
+            if isinstance(value, list):
+                formatted_result += f"{key.title()}:\n"
+                for item in value:
+                    formatted_result += f"  • {item}\n"
+            else:
+                formatted_result += f"{key.title()}: {value}\n"
+        return formatted_result.strip()
+    else:
+        return str(result)
+
+
 async def serve(config: PhoneAFriendConfig) -> None:
     """Start the Phone-a-Friend MCP server.
 
@@ -55,19 +71,8 @@ async def serve(config: PhoneAFriendConfig) -> None:
             logger.info(f"Calling tool: {name} with arguments: {arguments}")
             tool = tool_manager.get_tool(name)
             result = await tool.run(**arguments)
-
-            if isinstance(result, dict):
-                formatted_result = ""
-                for key, value in result.items():
-                    if isinstance(value, list):
-                        formatted_result += f"{key.title()}:\n"
-                        for item in value:
-                            formatted_result += f"  • {item}\n"
-                    else:
-                        formatted_result += f"{key.title()}: {value}\n"
-                return [TextContent(type="text", text=formatted_result.strip())]
-            else:
-                return [TextContent(type="text", text=str(result))]
+            formatted_result = _format_tool_result(result)
+            return [TextContent(type="text", text=formatted_result)]
 
         except Exception as e:
             logger.error("Tool execution failed: %s", e)

@@ -18,7 +18,6 @@ async def test_fax_a_friend_tool(config):
     """Test the fax a friend tool."""
     tool = FaxAFriendTool(config)
 
-    # Test with temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         result = await tool.run(
             all_related_context="We have a complex software architecture decision to make",
@@ -27,7 +26,6 @@ async def test_fax_a_friend_tool(config):
             output_directory=temp_dir,
         )
 
-        # Check result structure
         assert result["status"] == "success"
         assert "file_path" in result
         assert result["file_name"] == "fax_a_friend.md"
@@ -37,11 +35,9 @@ async def test_fax_a_friend_tool(config):
         assert result["context_length"] > 0
         assert result["task"] == "Help us choose between monolith and microservices architecture"
 
-        # Check file was created in the specified directory
         expected_file_path = os.path.join(temp_dir, "fax_a_friend.md")
         assert os.path.exists(expected_file_path)
 
-        # Check file content
         with open(expected_file_path, encoding="utf-8") as f:
             content = f.read()
             assert "=== TASK ===" in content
@@ -64,7 +60,6 @@ async def test_fax_a_friend_tool_without_additional_context(config):
         expected_file_path = os.path.join(temp_dir, "fax_a_friend.md")
         assert os.path.exists(expected_file_path)
 
-        # Check file content doesn't include additional context section
         with open(expected_file_path, encoding="utf-8") as f:
             content = f.read()
             assert "=== TASK ===" in content
@@ -79,7 +74,6 @@ async def test_fax_a_friend_tool_overwrite(config):
     tool = FaxAFriendTool(config)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create initial file
         initial_file_path = os.path.join(temp_dir, "fax_a_friend.md")
         with open(initial_file_path, "w") as f:
             f.write("Old content")
@@ -88,7 +82,6 @@ async def test_fax_a_friend_tool_overwrite(config):
 
         assert result["status"] == "success"
 
-        # Check file was overwritten
         with open(initial_file_path, encoding="utf-8") as f:
             content = f.read()
             assert "Old content" not in content
@@ -104,7 +97,6 @@ async def test_fax_a_friend_tool_missing_output_directory(config):
     result = await tool.run(
         all_related_context="Some context",
         task="Some task",
-        # Missing output_directory parameter
     )
 
     assert result["status"] == "failed"
@@ -116,7 +108,6 @@ async def test_fax_a_friend_tool_invalid_output_directory(config):
     """Test that the fax a friend tool handles invalid output directories."""
     tool = FaxAFriendTool(config)
 
-    # Test with a path that cannot be created (assuming /root is not writable in most test environments)
     result = await tool.run(all_related_context="Some context", task="Some task", output_directory="/root/nonexistent/deeply/nested/path")
 
     assert result["status"] == "failed"
@@ -129,21 +120,65 @@ async def test_fax_a_friend_tool_user_path_expansion(config):
     tool = FaxAFriendTool(config)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create a subdirectory to simulate user home expansion
         user_dir = os.path.join(temp_dir, "user_home")
         os.makedirs(user_dir)
 
-        # Mock expanduser to return our test directory
         import unittest.mock
 
         with unittest.mock.patch("os.path.expanduser", return_value=user_dir):
             result = await tool.run(
                 all_related_context="Some context",
                 task="Some task",
-                output_directory="~/Documents",  # This will be expanded to user_dir
+                output_directory="~/Documents",
             )
 
         assert result["status"] == "success"
         assert result["output_directory"] == user_dir
         expected_file_path = os.path.join(user_dir, "fax_a_friend.md")
         assert os.path.exists(expected_file_path)
+
+
+def test_config_default_temperature():
+    """Test that default temperature is applied for Gemini 2.5 Pro."""
+    config = PhoneAFriendConfig(api_key="test-key", provider="google", model="gemini-2.5-pro")
+
+    assert config.get_temperature() == 0.0
+
+    config2 = PhoneAFriendConfig(api_key="test-key", provider="openai", model="gpt-4")
+    assert config2.get_temperature() is None
+
+
+def test_config_custom_temperature():
+    """Test custom temperature via parameter."""
+    config = PhoneAFriendConfig(api_key="test-key", provider="openai", model="gpt-4", temperature=0.7)
+
+    assert config.get_temperature() == 0.7
+
+    config2 = PhoneAFriendConfig(api_key="test-key", provider="google", model="gemini-2.5-pro", temperature=0.5)
+    assert config2.get_temperature() == 0.5
+
+
+def test_config_invalid_temperature():
+    """Test that invalid temperature raises ValueError."""
+    with pytest.raises(ValueError, match="must be between 0.0 and 2.0"):
+        PhoneAFriendConfig(api_key="test-key", temperature=3.0)
+
+    with pytest.raises(ValueError, match="must be between 0.0 and 2.0"):
+        PhoneAFriendConfig(api_key="test-key", temperature=-0.1)
+
+
+def test_config_temperature_from_env(monkeypatch):
+    """Test temperature from environment variable."""
+    monkeypatch.setenv("PHONE_A_FRIEND_TEMPERATURE", "0.3")
+
+    config = PhoneAFriendConfig(api_key="test-key", provider="openai", model="gpt-4")
+
+    assert config.get_temperature() == 0.3
+
+
+def test_config_invalid_temperature_from_env(monkeypatch):
+    """Test invalid temperature from environment variable."""
+    monkeypatch.setenv("PHONE_A_FRIEND_TEMPERATURE", "not_a_number")
+
+    with pytest.raises(ValueError, match="Invalid temperature value"):
+        PhoneAFriendConfig(api_key="test-key", provider="openai", model="gpt-4")
