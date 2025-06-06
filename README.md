@@ -78,6 +78,9 @@ phone-a-friend-mcp-server --api-key "your-api-key" --provider openai
 # Custom base URL (if needed)
 phone-a-friend-mcp-server --base-url "https://custom-api.example.com"
 
+# Temperature control (0.0 = deterministic, 2.0 = very creative)
+phone-a-friend-mcp-server --temperature 0.4
+
 # Combined example
 phone-a-friend-mcp-server --api-key "sk-..." --provider openai --model "o3" -v
 ```
@@ -89,6 +92,9 @@ phone-a-friend-mcp-server --api-key "sk-..." --provider openai --model "o3" -v
 export PHONE_A_FRIEND_MODEL="your-preferred-model"
 export PHONE_A_FRIEND_PROVIDER="your-preferred-provider"
 export PHONE_A_FRIEND_BASE_URL="https://custom-api.example.com"
+
+# Temperature control (0.0-2.0, where 0.0 = deterministic, 2.0 = very creative)
+export PHONE_A_FRIEND_TEMPERATURE=0.4
 ```
 
 ## Model Selection 🤖
@@ -96,7 +102,7 @@ export PHONE_A_FRIEND_BASE_URL="https://custom-api.example.com"
 Default reasoning models to be selected:
 - **OpenAI**: o3
 - **Anthropic**: Claude 4 Opus
-- **Google**: Gemini 2.5 Pro Preview 05-06
+- **Google**: Gemini 2.5 Pro Preview 05-06 (automatically set temperature to 0.0)
 - **OpenRouter**: For other models like Deepseek or Qwen
 
 You can override the auto-selection by setting `PHONE_A_FRIEND_MODEL` environment variable or using the `--model` CLI option.
@@ -143,7 +149,8 @@ To use Phone-a-Friend MCP server with Claude Desktop, add this configuration to 
       ],
       "env": {
         "OPENROUTER_API_KEY": "your-openrouter-api-key",
-        "PHONE_A_FRIEND_MODEL": "anthropic/claude-4-opus"
+        "PHONE_A_FRIEND_MODEL": "anthropic/claude-4-opus",
+        "PHONE_A_FRIEND_TEMPERATURE": "0.4"
       }
     }
   }
@@ -161,7 +168,8 @@ You can configure different AI providers directly in the Claude Desktop config:
       "command": "phone-a-friend-mcp-server",
       "env": {
         "OPENROUTER_API_KEY": "your-openrouter-api-key",
-        "PHONE_A_FRIEND_MODEL": "anthropic/claude-4-opus"
+        "PHONE_A_FRIEND_MODEL": "anthropic/claude-4-opus",
+        "PHONE_A_FRIEND_TEMPERATURE": "0.4"
       }
     }
   }

@@ -123,57 +123,57 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
         any_additional_context = kwargs.get("any_additional_context", "")
         task = kwargs.get("task", "")
 
-        # Create master prompt for external AI
         master_prompt = self._create_master_prompt(all_related_context, any_additional_context, task)
 
         try:
-            # Create Pydantic-AI agent with appropriate provider
             agent = self._create_agent()
+            temperature = self.config.get_temperature()
 
-            # Send to external AI
-            result = await agent.run(master_prompt)
+            if temperature is not None:
+                result = await agent.run(master_prompt, model_settings={"temperature": temperature})
+            else:
+                result = await agent.run(master_prompt)
 
             return {
                 "response": result.data,
                 "status": "success",
                 "provider": self.config.provider,
                 "model": self.config.model,
+                "temperature": temperature,
                 "context_length": len(all_related_context + any_additional_context),
                 "task": task,
             }
 
         except Exception as e:
+            temperature = self.config.get_temperature()
             return {
                 "error": str(e),
                 "status": "failed",
                 "provider": self.config.provider,
                 "model": self.config.model,
+                "temperature": temperature,
                 "context_length": len(all_related_context + any_additional_context),
                 "task": task,
-                "master_prompt": master_prompt,  # Include for debugging
+                "master_prompt": master_prompt,
             }
 
     def _create_agent(self) -> Agent:
         """Create Pydantic-AI agent with appropriate provider."""
         if self.config.provider == "openrouter":
-            # OpenRouter has its own dedicated provider
             provider_kwargs = {"api_key": self.config.api_key}
             if self.config.base_url:
                 provider_kwargs["base_url"] = self.config.base_url
             provider = OpenRouterProvider(**provider_kwargs)
             model = OpenAIModel(self.config.model, provider=provider)
         elif self.config.provider == "anthropic":
-            # Use Anthropic directly
             provider_kwargs = {"api_key": self.config.api_key}
             provider = AnthropicProvider(**provider_kwargs)
             model = AnthropicModel(self.config.model, provider=provider)
         elif self.config.provider == "google":
-            # Use Google/Gemini directly
             provider_kwargs = {"api_key": self.config.api_key}
             provider = GoogleProvider(**provider_kwargs)
             model = GoogleModel(self.config.model, provider=provider)
         else:
-            # Default to OpenAI
             provider_kwargs = {"api_key": self.config.api_key}
             if self.config.base_url:
                 provider_kwargs["base_url"] = self.config.base_url
