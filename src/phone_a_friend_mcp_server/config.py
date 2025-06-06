@@ -37,7 +37,7 @@ class PhoneAFriendConfig:
 
     def _get_default_model(self) -> str:
         """Get default model based on provider."""
-        models = {"openai": "o3", "openrouter": "anthropic/claude-4-opus", "anthropic": "claude-4-opus", "google": "gemini-2.5-pro-preview-05-06"}
+        models = {"openai": "o3", "openrouter": "anthropic/claude-4-opus", "anthropic": "claude-4-opus", "google": "gemini-2.5-pro-preview-06-05"}
         if self.provider not in models:
             raise ValueError(f"Unknown provider: {self.provider}. Supported providers: {list(models.keys())}")
         return models[self.provider]
