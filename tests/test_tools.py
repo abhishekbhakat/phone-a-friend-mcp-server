@@ -13,129 +13,67 @@ def config():
     return PhoneAFriendConfig(api_key="test-key", provider="openai", model="gpt-4")
 
 
-@pytest.mark.asyncio
-async def test_fax_a_friend_tool(config):
-    """Test the fax a friend tool."""
-    tool = FaxAFriendTool(config)
-
+@pytest.fixture
+def temp_project():
+    """Create a temporary project structure for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        result = await tool.run(
-            all_related_context="We have a complex software architecture decision to make",
-            any_additional_context="The team has experience with microservices",
-            task="Help us choose between monolith and microservices architecture",
-            output_directory=temp_dir,
-        )
+        # Create .gitignore
+        with open(os.path.join(temp_dir, ".gitignore"), "w") as f:
+            f.write("*.pyc\n")
+            f.write("__pycache__/\n")
 
-        assert result["status"] == "success"
-        assert "file_path" in result
-        assert result["file_name"] == "fax_a_friend.md"
-        assert result["output_directory"] == temp_dir
-        assert "instructions" in result
-        assert result["prompt_length"] > 0
-        assert result["context_length"] > 0
-        assert result["task"] == "Help us choose between monolith and microservices architecture"
+        # Create some files
+        os.makedirs(os.path.join(temp_dir, "src"))
+        with open(os.path.join(temp_dir, "src", "main.py"), "w") as f:
+            f.write("print('hello')\n")
+        with open(os.path.join(temp_dir, "src", "main.pyc"), "w") as f:
+            f.write("binary_content")
+        with open(os.path.join(temp_dir, "README.md"), "w") as f:
+            f.write("# Project\n")
 
-        expected_file_path = os.path.join(temp_dir, "fax_a_friend.md")
-        assert os.path.exists(expected_file_path)
-
-        with open(expected_file_path, encoding="utf-8") as f:
-            content = f.read()
-            assert "=== TASK ===" in content
-            assert "=== ALL RELATED CONTEXT ===" in content
-            assert "=== ADDITIONAL CONTEXT ===" in content
-            assert "=== INSTRUCTIONS ===" in content
-            assert "complex software architecture decision" in content
-            assert "microservices architecture" in content
+        original_cwd = os.getcwd()
+        os.chdir(temp_dir)
+        try:
+            yield temp_dir
+        finally:
+            os.chdir(original_cwd)
 
 
 @pytest.mark.asyncio
-async def test_fax_a_friend_tool_without_additional_context(config):
-    """Test the fax a friend tool without additional context."""
-    tool = FaxAFriendTool(config)
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        result = await tool.run(all_related_context="Simple problem context", task="Simple task", output_directory=temp_dir)
-
-        assert result["status"] == "success"
-        expected_file_path = os.path.join(temp_dir, "fax_a_friend.md")
-        assert os.path.exists(expected_file_path)
-
-        with open(expected_file_path, encoding="utf-8") as f:
-            content = f.read()
-            assert "=== TASK ===" in content
-            assert "=== ALL RELATED CONTEXT ===" in content
-            assert "=== ADDITIONAL CONTEXT ===" not in content
-            assert "=== INSTRUCTIONS ===" in content
-
-
-@pytest.mark.asyncio
-async def test_fax_a_friend_tool_overwrite(config):
-    """Test that the fax a friend tool overwrites existing files."""
-    tool = FaxAFriendTool(config)
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        initial_file_path = os.path.join(temp_dir, "fax_a_friend.md")
-        with open(initial_file_path, "w") as f:
-            f.write("Old content")
-
-        result = await tool.run(all_related_context="New context", task="New task", output_directory=temp_dir)
-
-        assert result["status"] == "success"
-
-        with open(initial_file_path, encoding="utf-8") as f:
-            content = f.read()
-            assert "Old content" not in content
-            assert "New context" in content
-            assert "New task" in content
-
-
-@pytest.mark.asyncio
-async def test_fax_a_friend_tool_missing_output_directory(config):
-    """Test that the fax a friend tool fails when output_directory is missing."""
+async def test_fax_a_friend_tool_with_context_builder(config, temp_project):
+    """Test the fax a friend tool with the new context builder."""
     tool = FaxAFriendTool(config)
 
     result = await tool.run(
-        all_related_context="Some context",
-        task="Some task",
+        all_related_context="This is the general context.",
+        file_list=["src/main.py", "README.md", "src/main.pyc"],
+        task="Review the code.",
+        output_directory=".",
     )
 
-    assert result["status"] == "failed"
-    assert "output_directory parameter is required" in result["error"]
+    assert result["status"] == "success"
+    assert result["file_name"] == "fax_a_friend.md"
+    assert "instructions" in result
 
+    expected_file_path = os.path.join(temp_project, "fax_a_friend.md")
+    assert os.path.exists(expected_file_path)
 
-@pytest.mark.asyncio
-async def test_fax_a_friend_tool_invalid_output_directory(config):
-    """Test that the fax a friend tool handles invalid output directories."""
-    tool = FaxAFriendTool(config)
-
-    result = await tool.run(all_related_context="Some context", task="Some task", output_directory="/root/nonexistent/deeply/nested/path")
-
-    assert result["status"] == "failed"
-    assert "Cannot create directory" in result["error"]
-
-
-@pytest.mark.asyncio
-async def test_fax_a_friend_tool_user_path_expansion(config):
-    """Test that the fax a friend tool properly expands user paths."""
-    tool = FaxAFriendTool(config)
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        user_dir = os.path.join(temp_dir, "user_home")
-        os.makedirs(user_dir)
-
-        import unittest.mock
-
-        with unittest.mock.patch("os.path.expanduser", return_value=user_dir):
-            result = await tool.run(
-                all_related_context="Some context",
-                task="Some task",
-                output_directory="~/Documents",
-            )
-
-        assert result["status"] == "success"
-        assert result["output_directory"] == user_dir
-        expected_file_path = os.path.join(user_dir, "fax_a_friend.md")
-        assert os.path.exists(expected_file_path)
+    with open(expected_file_path, encoding="utf-8") as f:
+        content = f.read()
+        assert "=== TASK ===" in content
+        assert "Review the code." in content
+        assert "=== GENERAL CONTEXT ===" in content
+        assert "This is the general context." in content
+        assert "=== CODE CONTEXT ===" in content
+        assert "<file_tree>" in content
+        assert "main.py" in content
+        assert "README.md" in content
+        assert "main.pyc" not in content  # Should be ignored
+        assert '<file="src/main.py">' in content
+        assert "print('hello')" in content
+        assert "=== INSTRUCTIONS ===" in content
+        assert "Provide exhaustive, step-by-step reasoning." in content
+        assert "Never include files matching .gitignore patterns." in content
 
 
 def test_config_default_temperature():

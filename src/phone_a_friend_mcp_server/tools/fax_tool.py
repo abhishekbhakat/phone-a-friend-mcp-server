@@ -4,6 +4,7 @@ from typing import Any
 import aiofiles
 
 from phone_a_friend_mcp_server.tools.base_tools import BaseTool
+from phone_a_friend_mcp_server.utils.context_builder import build_code_context
 
 
 class FaxAFriendTool(BaseTool):
@@ -35,9 +36,10 @@ refactors, design, migrations.
 
 This tool creates a file for manual AI consultation. After file creation,
 wait for the user to return with the external AI's response.
+Replies must be exhaustively detailed. Do **NOT** include files ignored by .gitignore (e.g., *.pyc).
 
 Hard restrictions:
-  • Generated prompt includes *only* the two context blocks you send.
+  • Generated prompt includes *only* the context you provide.
   • No memory, no internet, no tools.
   • You must spell out every fact it should rely on.
 
@@ -83,22 +85,17 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                 "all_related_context": {
                     "type": "string",
                     "description": (
-                        "MANDATORY. Everything the friend AI needs to see:\n"
-                        "- The full <file_tree> block (ASCII tree).\n"
-                        '- One or more <file="…"> blocks with the current code.\n'
-                        "- Known constraints (Python version, allowed deps, runtime limits, etc.).\n"
-                        "- Any failing test output or traceback.\n"
-                        "If it's not here, the friend AI can't use it."
+                        "MANDATORY. General, non-code context for the friend AI. "
+                        "Include known constraints (Python version, allowed deps, etc.), "
+                        "failing test output, or tracebacks. DO NOT include file contents here."
                     ),
                 },
-                "any_additional_context": {
-                    "type": "string",
+                "file_list": {
+                    "type": "array",
+                    "items": {"type": "string"},
                     "description": (
-                        "Optional extras that help but aren't core code:\n"
-                        "- Style guides, architecture docs, API specs.\n"
-                        "- Performance targets, security rules, deployment notes.\n"
-                        "- Similar past solutions or reference snippets.\n"
-                        "Skip it if there's nothing useful."
+                        "MANDATORY. A list of file paths or glob patterns to be included in the code context. "
+                        "The tool will automatically read these files, filter them against .gitignore, and build the context."
                     ),
                 },
                 "task": {
@@ -122,29 +119,26 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                     ),
                 },
             },
-            "required": ["all_related_context", "task", "output_directory"],
+            "required": ["all_related_context", "file_list", "task", "output_directory"],
         }
 
     async def run(self, **kwargs) -> dict[str, Any]:
         all_related_context = kwargs.get("all_related_context", "")
-        any_additional_context = kwargs.get("any_additional_context", "")
+        file_list = kwargs.get("file_list", [])
         task = kwargs.get("task", "")
         output_directory = kwargs.get("output_directory", "")
 
-        # Create master prompt using the same logic as phone_a_friend
-        master_prompt = self._create_master_prompt(all_related_context, any_additional_context, task)
+        code_context = build_code_context(file_list)
+        master_prompt = self._create_master_prompt(all_related_context, code_context, task)
 
         try:
-            # Validate and prepare output directory
             output_dir = self._prepare_output_directory(output_directory)
 
-            # Create full file path
             file_path = os.path.join(output_dir, "fax_a_friend.md")
 
             async with aiofiles.open(file_path, "w", encoding="utf-8") as f:
                 await f.write(master_prompt)
 
-            # Get absolute path for user reference
             abs_path = os.path.abspath(file_path)
 
             return {
@@ -153,15 +147,15 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                 "file_name": "fax_a_friend.md",
                 "output_directory": output_dir,
                 "prompt_length": len(master_prompt),
-                "context_length": len(all_related_context + any_additional_context),
+                "context_length": len(master_prompt),
                 "task": task,
                 "instructions": self._get_manual_workflow_instructions(abs_path),
             }
 
         except Exception as e:
-            return {"status": "failed", "error": str(e), "output_directory": output_directory, "context_length": len(all_related_context + any_additional_context), "task": task}
+            return {"status": "failed", "error": str(e), "output_directory": output_directory, "context_length": len(master_prompt), "task": task}
 
-    def _create_master_prompt(self, all_related_context: str, any_additional_context: str, task: str) -> str:
+    def _create_master_prompt(self, all_related_context: str, code_context: str, task: str) -> str:
         """Create a comprehensive prompt identical to PhoneAFriendTool's version."""
 
         prompt_parts = [
@@ -171,23 +165,19 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
             "=== TASK ===",
             task,
             "",
-            "=== ALL RELATED CONTEXT ===",
+            "=== GENERAL CONTEXT ===",
             all_related_context,
+            "",
+            "=== CODE CONTEXT ===",
+            code_context,
         ]
-
-        if any_additional_context.strip():
-            prompt_parts.extend(
-                [
-                    "",
-                    "=== ADDITIONAL CONTEXT ===",
-                    any_additional_context,
-                ]
-            )
 
         prompt_parts.extend(
             [
                 "",
                 "=== INSTRUCTIONS ===",
+                "- Provide exhaustive, step-by-step reasoning.",
+                "- Never include files matching .gitignore patterns.",
                 "- Analyze the code and requirements step-by-step.",
                 "- Show your reasoning and propose concrete changes.",
                 '- Provide updated code using the XML format (<file_tree> plus <file="…"> blocks).',
@@ -204,17 +194,14 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
         if not output_directory:
             raise ValueError("output_directory parameter is required")
 
-        # Expand user path (~) and resolve relative paths
         expanded_path = os.path.expanduser(output_directory)
         resolved_path = os.path.abspath(expanded_path)
 
-        # Create directory if it doesn't exist
         try:
             os.makedirs(resolved_path, exist_ok=True)
         except OSError as e:
             raise ValueError(f"Cannot create directory '{resolved_path}': {e}")
 
-        # Check if directory is writable
         if not os.access(resolved_path, os.W_OK):
             raise ValueError(f"Directory '{resolved_path}' is not writable")
 

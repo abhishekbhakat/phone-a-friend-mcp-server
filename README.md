@@ -39,73 +39,29 @@ Primary AI → Phone-a-Friend MCP → OpenRouter → External AI (GPT-4, Claude,
 - Critical decision-making with high stakes
 - Problems requiring multiple perspectives
 
-## Installation 🚀
+## Quick Start ⚡
 
-1. Clone the repository:
-```bash
-git clone https://github.com/abhishekbhakat/phone-a-friend-mcp-server.git
-cd phone-a-friend-mcp-server
-```
+Configure your MCP client (e.g., Claude Desktop) using the JSON block below—no cloning or manual installation required.
+The `uv` runner will automatically download and execute the server package if it isn't present.
 
-2. Install dependencies:
-```bash
-uv pip install -e .
-```
+Add the following JSON configuration to your MCP client and replace `<YOUR_API_KEY>` with your key:
 
-3. Configure API access (choose one method):
-
-**Option A: Environment Variables**
-```bash
-export OPENROUTER_API_KEY="your-openrouter-key"
-# OR
-export OPENAI_API_KEY="your-openai-key"
-# OR
-export ANTHROPIC_API_KEY="your-anthropic-key"
-# OR
-export GOOGLE_API_KEY="your-google-key"
-```
-
-**Option B: CLI Arguments**
-```bash
-phone-a-friend-mcp-server --api-key "your-api-key" --provider openai
-```
-
-## Usage 💡
-
-### Command Line Options
-```bash
-
-# Custom base URL (if needed)
-phone-a-friend-mcp-server --base-url "https://custom-api.example.com"
-
-# Temperature control (0.0 = deterministic, 2.0 = very creative)
-phone-a-friend-mcp-server --temperature 0.4
-
-# Combined example
-phone-a-friend-mcp-server --api-key "sk-..." --provider openai --model "o3" -v
-```
-
-### Environment Variables (Optional)
-```bash
-
-# Optional model overrides
-export PHONE_A_FRIEND_MODEL="your-preferred-model"
-export PHONE_A_FRIEND_PROVIDER="your-preferred-provider"
-export PHONE_A_FRIEND_BASE_URL="https://custom-api.example.com"
-
-# Temperature control (0.0-2.0, where 0.0 = deterministic, 2.0 = very creative)
-export PHONE_A_FRIEND_TEMPERATURE=0.4
-```
-
-## Model Selection 🤖
-
-Default reasoning models to be selected:
-- **OpenAI**: o3
-- **Anthropic**: Claude 4 Opus
-- **Google**: Gemini 2.5 Pro Preview 05-06 (automatically set temperature to 0.0)
-- **OpenRouter**: For other models like Deepseek or Qwen
-
-You can override the auto-selection by setting `PHONE_A_FRIEND_MODEL` environment variable or using the `--model` CLI option.
+    ```json
+    {
+      "mcpServers": {
+        "phone-a-friend": {
+          "command": "uv",
+          "args": [
+            "run",
+            "phone-a-friend-mcp-server",
+            "--provider", "openai",
+            "--api-key", "<YOUR_API_KEY>"
+          ]
+        }
+      }
+    }
+    ```
+    > That's it! You can now use the `phone_a_friend` tool in any compatible client. For more options, see the Advanced Configuration section.
 
 ## Available Tools 🛠️
 
@@ -115,66 +71,80 @@ You can override the auto-selection by setting `PHONE_A_FRIEND_MODEL` environmen
 ### fax_a_friend
 📠 Generate master prompt file for manual AI consultation. Creates file for copy-paste workflow.
 
-**Parameters (both tools):**
-- `all_related_context` (required): All context related to the problem
-- `any_additional_context` (optional): Additional helpful context
-- `task` (required): Specific task or question for the AI
+**Parameters**
 
+*phone_a_friend*
+
+- `all_related_context` (required): General, non-code context such as constraints, tracebacks, or high-level requirements.
+- `file_list` (required): Array of file paths or glob patterns. **Just pass the paths** – the server automatically reads those files (skips anything in `.gitignore` or non-text/binary) and builds the full code context for the external AI.
+- `task` (required): A clear, specific description of what you want the external AI to do.
+
+*fax_a_friend*
+
+- `all_related_context` (required): Same as above.
+- `file_list` (required): Same as above.
+- `task` (required): Same as above.
+- `output_directory` (required): Directory where the generated `fax_a_friend.md` master prompt file will be saved.
+
+## Advanced Configuration 🔧
+
+This section covers all configuration options, including environment variables, CLI flags, and model selection.
+
+### Providers and API Keys
+
+The server can be configured via CLI flags or environment variables.
+
+| Provider | CLI Flag | Environment Variable |
+| :--- | :--- | :--- |
+| OpenAI | `--provider openai` | `OPENAI_API_KEY` |
+| OpenRouter | `--provider openrouter` | `OPENROUTER_API_KEY` |
+| Anthropic | `--provider anthropic` | `ANTHROPIC_API_KEY` |
+| Google | `--provider google` | `GOOGLE_API_KEY` |
+
+**CLI Example:**
+```bash
+phone-a-friend-mcp-server --provider openai --api-key "sk-..."
+```
+
+**Environment Variable Example:**
+```bash
+export OPENAI_API_KEY="sk-..."
+phone-a-friend-mcp-server
+```
+
+### Model Selection
+
+You can override the default model for each provider.
+
+| Provider | Default Model |
+| :--- | :--- |
+| **OpenAI** | `o3` |
+| **Anthropic** | `Claude 4 Opus` |
+| **Google** | `Gemini 2.5 Pro Preview 05-06` |
+| **OpenRouter**| `anthropic/claude-4-opus` |
+
+**Override with CLI:**
+```bash
+phone-a-friend-mcp-server --model "gpt-4-turbo"
+```
+
+**Override with Environment Variable:**
+```bash
+export PHONE_A_FRIEND_MODEL="gpt-4-turbo"
+```
+
+### Additional Options
+
+| Feature | CLI Flag | Environment Variable | Default |
+| :--- | :--- | :--- | :--- |
+| **Temperature** | `--temperature 0.5` | `PHONE_A_FRIEND_TEMPERATURE` | `0.4` |
+| **Base URL** | `--base-url ...` | `PHONE_A_FRIEND_BASE_URL` | Provider default |
 
 ## Use Cases 🎯
 
 1. In-depth Reasoning for Vibe Coding
 2. For complex algorithms, data structures, or mathematical computations
 3. Frontend Development with React, Vue, CSS, or modern frontend frameworks
-
-## Claude Desktop Configuration 🖥️
-
-To use Phone-a-Friend MCP server with Claude Desktop, add this configuration to your `claude_desktop_config.json` file:
-
-### Configuration File Location
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-### Configuration
-
-**Option 1: Using uv (Recommended)**
-```json
-{
-  "mcpServers": {
-    "phone-a-friend": {
-      "command": "uvx",
-      "args": [
-        "--refresh",
-        "phone-a-friend-mcp-server",
-      ],
-      "env": {
-        "OPENROUTER_API_KEY": "your-openrouter-api-key",
-        "PHONE_A_FRIEND_MODEL": "anthropic/claude-4-opus",
-        "PHONE_A_FRIEND_TEMPERATURE": "0.4"
-      }
-    }
-  }
-}
-```
-
-### Environment Variables in Configuration
-
-You can configure different AI providers directly in the Claude Desktop config:
-
-```json
-{
-  "mcpServers": {
-    "phone-a-friend": {
-      "command": "phone-a-friend-mcp-server",
-      "env": {
-        "OPENROUTER_API_KEY": "your-openrouter-api-key",
-        "PHONE_A_FRIEND_MODEL": "anthropic/claude-4-opus",
-        "PHONE_A_FRIEND_TEMPERATURE": "0.4"
-      }
-    }
-  }
-}
-```
 
 ## License 📄
 
