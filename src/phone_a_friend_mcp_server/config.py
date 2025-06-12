@@ -74,6 +74,7 @@ class PhoneAFriendConfig:
         """Get default temperature for specific models that benefit from it."""
         default_temperatures = {
             "gemini-2.5-pro-preview-06-05": 0.0,
+            "gemini-2.5-pro": 0.0,
         }
 
         return default_temperatures.get(self.model)

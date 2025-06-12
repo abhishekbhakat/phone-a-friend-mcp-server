@@ -10,6 +10,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 from phone_a_friend_mcp_server.tools.base_tools import BaseTool
+from phone_a_friend_mcp_server.utils.context_builder import build_code_context
 
 
 class PhoneAFriendTool(BaseTool):
@@ -39,9 +40,10 @@ Purpose: pair-programming caliber *coding help* — reviews, debugging,
 refactors, design, migrations.
 
 Hard restrictions:
-  • Friend AI sees *only* the two context blocks you send.
+  • Friend AI sees *only* the context you provide.
   • No memory, no internet, no tools.
   • You must spell out every fact it should rely on.
+Replies must be exhaustively detailed. Do **NOT** include files ignored by .gitignore (e.g., *.pyc).
 
 Required I/O format:
 ```
@@ -85,22 +87,17 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                 "all_related_context": {
                     "type": "string",
                     "description": (
-                        "MANDATORY. Everything the friend AI needs to see:\n"
-                        "- The full <file_tree> block (ASCII tree).\n"
-                        '- One or more <file="…"> blocks with the current code.\n'
-                        "- Known constraints (Python version, allowed deps, runtime limits, etc.).\n"
-                        "- Any failing test output or traceback.\n"
-                        "If it's not here, the friend AI can't use it."
+                        "MANDATORY. General, non-code context for the friend AI. "
+                        "Include known constraints (Python version, allowed deps, etc.), "
+                        "failing test output, or tracebacks. DO NOT include file contents here."
                     ),
                 },
-                "any_additional_context": {
-                    "type": "string",
+                "file_list": {
+                    "type": "array",
+                    "items": {"type": "string"},
                     "description": (
-                        "Optional extras that help but aren't core code:\n"
-                        "- Style guides, architecture docs, API specs.\n"
-                        "- Performance targets, security rules, deployment notes.\n"
-                        "- Similar past solutions or reference snippets.\n"
-                        "Skip it if there's nothing useful."
+                        "MANDATORY. A list of file paths or glob patterns to be included in the code context. "
+                        "The tool will automatically read these files, filter them against .gitignore, and build the context."
                     ),
                 },
                 "task": {
@@ -115,15 +112,16 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                     ),
                 },
             },
-            "required": ["all_related_context", "task"],
+            "required": ["all_related_context", "file_list", "task"],
         }
 
     async def run(self, **kwargs) -> dict[str, Any]:
         all_related_context = kwargs.get("all_related_context", "")
-        any_additional_context = kwargs.get("any_additional_context", "")
+        file_list = kwargs.get("file_list", [])
         task = kwargs.get("task", "")
 
-        master_prompt = self._create_master_prompt(all_related_context, any_additional_context, task)
+        code_context = build_code_context(file_list)
+        master_prompt = self._create_master_prompt(all_related_context, code_context, task)
 
         try:
             agent = self._create_agent()
@@ -140,7 +138,7 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                 "provider": self.config.provider,
                 "model": self.config.model,
                 "temperature": temperature,
-                "context_length": len(all_related_context + any_additional_context),
+                "context_length": len(master_prompt),
                 "task": task,
             }
 
@@ -152,7 +150,7 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                 "provider": self.config.provider,
                 "model": self.config.model,
                 "temperature": temperature,
-                "context_length": len(all_related_context + any_additional_context),
+                "context_length": len(master_prompt),
                 "task": task,
                 "master_prompt": master_prompt,
             }
@@ -182,7 +180,7 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
 
         return Agent(model)
 
-    def _create_master_prompt(self, all_related_context: str, any_additional_context: str, task: str) -> str:
+    def _create_master_prompt(self, all_related_context: str, code_context: str, task: str) -> str:
         """Create a comprehensive prompt for the external AI."""
 
         prompt_parts = [
@@ -192,23 +190,19 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
             "=== TASK ===",
             task,
             "",
-            "=== ALL RELATED CONTEXT ===",
+            "=== GENERAL CONTEXT ===",
             all_related_context,
+            "",
+            "=== CODE CONTEXT ===",
+            code_context,
         ]
-
-        if any_additional_context.strip():
-            prompt_parts.extend(
-                [
-                    "",
-                    "=== ADDITIONAL CONTEXT ===",
-                    any_additional_context,
-                ]
-            )
 
         prompt_parts.extend(
             [
                 "",
                 "=== INSTRUCTIONS ===",
+                "- Provide exhaustive, step-by-step reasoning.",
+                "- Never include files matching .gitignore patterns.",
                 "- Analyze the code and requirements step-by-step.",
                 "- Show your reasoning and propose concrete changes.",
                 '- Provide updated code using the XML format (<file_tree> plus <file="…"> blocks).',
