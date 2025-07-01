@@ -46,22 +46,21 @@ The `uv` runner will automatically download and execute the server package if it
 
 Add the following JSON configuration to your MCP client and replace `<YOUR_API_KEY>` with your key:
 
-    ```json
-    {
-      "mcpServers": {
-        "phone-a-friend": {
-          "command": "uv",
-          "args": [
-            "run",
-            "phone-a-friend-mcp-server",
-            "--provider", "openai",
-            "--api-key", "<YOUR_API_KEY>"
-          ]
-        }
-      }
+```json
+{
+  "mcpServers": {
+    "phone-a-friend": {
+      "command": "uvx",
+      "args": [
+        "phone-a-friend-mcp-server",
+        "--provider", "openai",
+        "--api-key", "<YOUR_API_KEY>"
+      ]
     }
-    ```
-    > That's it! You can now use the `phone_a_friend` tool in any compatible client. For more options, see the Advanced Configuration section.
+  }
+}
+```
+> That's it! You can now use the `phone_a_friend` tool in any compatible client. For more options, see the Advanced Configuration section.
 
 ## Available Tools 🛠️
 
