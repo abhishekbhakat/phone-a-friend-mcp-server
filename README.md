@@ -22,7 +22,7 @@ This enables AI systems to leverage other AI models as "consultants" for complex
 ## Architecture 🏗️
 
 ```
-Primary AI → Phone-a-Friend MCP → OpenRouter → External AI (GPT-4, Claude, etc.) → Processed Response → Primary AI
+Primary AI → Phone-a-Friend MCP → OpenRouter → External AI (O3, Claude, etc.) → Processed Response → Primary AI
 ```
 
 **Sequential Workflow:**
@@ -125,12 +125,12 @@ You can override the default model for each provider.
 
 **Override with CLI:**
 ```bash
-phone-a-friend-mcp-server --model "gpt-4-turbo"
+phone-a-friend-mcp-server --model "o3"
 ```
 
 **Override with Environment Variable:**
 ```bash
-export PHONE_A_FRIEND_MODEL="gpt-4-turbo"
+export PHONE_A_FRIEND_MODEL="o3"
 ```
 
 ### Additional Options
