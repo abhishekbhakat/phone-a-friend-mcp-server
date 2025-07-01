@@ -87,17 +87,18 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                 "all_related_context": {
                     "type": "string",
                     "description": (
-                        "MANDATORY. General, non-code context for the friend AI. "
-                        "Include known constraints (Python version, allowed deps, etc.), "
-                        "failing test output, or tracebacks. DO NOT include file contents here."
+                        "General context for the friend AI. Include known constraints "
+                        "(Python version, allowed deps, etc.), failing test output, tracebacks, "
+                        "or code snippets for reference. For complete files, use file_list instead."
                     ),
                 },
                 "file_list": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": (
-                        "MANDATORY. A list of file paths or glob patterns to be included in the code context. "
-                        "The tool will automatically read these files, filter them against .gitignore, and build the context."
+                        "Optional but recommended. A list of file paths or glob patterns to be included in the code context. "
+                        "The tool will automatically read these files, filter them against .gitignore, and build the context. "
+                        "Better and faster than including complete files in all_related_context."
                     ),
                 },
                 "task": {
@@ -112,7 +113,7 @@ replacing <file="…"> blocks as needed. Commentary goes outside those tags."""
                     ),
                 },
             },
-            "required": ["all_related_context", "file_list", "task"],
+            "required": ["all_related_context", "task"],
         }
 
     async def run(self, **kwargs) -> dict[str, Any]:
