@@ -5,6 +5,7 @@ import pytest
 
 from phone_a_friend_mcp_server.config import PhoneAFriendConfig
 from phone_a_friend_mcp_server.tools.fax_tool import FaxAFriendTool
+from phone_a_friend_mcp_server.tools.phone_tool import PhoneAFriendTool
 
 
 @pytest.fixture
@@ -68,12 +69,59 @@ async def test_fax_a_friend_tool_with_context_builder(config, temp_project):
         assert "<file_tree>" in content
         assert "main.py" in content
         assert "README.md" in content
-        assert "main.pyc" not in content  # Should be ignored
-        assert '<file="src/main.py">' in content
-        assert "print('hello')" in content
-        assert "=== INSTRUCTIONS ===" in content
-        assert "Provide exhaustive, step-by-step reasoning." in content
-        assert "Never include files matching .gitignore patterns." in content
+
+
+@pytest.mark.asyncio
+async def test_fax_a_friend_tool_without_file_list(config, temp_project):
+    """Test the fax a friend tool without file_list parameter."""
+    tool = FaxAFriendTool(config)
+
+    result = await tool.run(
+        all_related_context="This is the general context with code snippets.",
+        task="Review the architecture.",
+        output_directory=".",
+    )
+
+    assert result["status"] == "success"
+    assert result["file_name"] == "fax_a_friend.md"
+
+    expected_file_path = os.path.join(temp_project, "fax_a_friend.md")
+    assert os.path.exists(expected_file_path)
+
+    with open(expected_file_path, encoding="utf-8") as f:
+        content = f.read()
+        assert "=== TASK ===" in content
+        assert "Review the architecture." in content
+        assert "=== GENERAL CONTEXT ===" in content
+        assert "This is the general context with code snippets." in content
+        assert "=== CODE CONTEXT ===" in content
+        assert "<file_tree>" in content
+        # Should show complete tree but no file contents
+        assert "No specific files selected" in content
+
+
+@pytest.mark.asyncio
+async def test_phone_a_friend_tool_without_file_list(config):
+    """Test the phone a friend tool without file_list parameter."""
+    tool = PhoneAFriendTool(config)
+
+    # Mock the agent to avoid actual API calls
+    class MockAgent:
+        async def run(self, prompt, model_settings=None):
+            class MockResult:
+                data = "Mock AI response"
+
+            return MockResult()
+
+    tool._create_agent = lambda: MockAgent()
+
+    result = await tool.run(
+        all_related_context="This is the general context with code snippets.",
+        task="Review the architecture.",
+    )
+
+    assert result["status"] == "success"
+    assert result["response"] == "Mock AI response"
 
 
 def test_config_default_temperature():

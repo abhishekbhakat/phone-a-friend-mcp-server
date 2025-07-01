@@ -14,6 +14,20 @@ def load_gitignore(base_dir: str) -> pathspec.PathSpec:
     return pathspec.PathSpec.from_lines("gitwildmatch", patterns)
 
 
+def get_all_project_files(base_dir: str = ".") -> list[str]:
+    """Get all files in the project directory recursively."""
+    all_files = []
+    for root, dirs, files in os.walk(base_dir):
+        # Skip hidden directories like .git, .venv, etc.
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+
+        for file in files:
+            if not file.startswith("."):  # Skip hidden files
+                rel_path = os.path.relpath(os.path.join(root, file), base_dir)
+                all_files.append(rel_path)
+    return sorted(all_files)
+
+
 def filter_paths(paths: list[str], spec: pathspec.PathSpec, base_dir: str = ".") -> list[str]:
     """Filters out paths that match the .gitignore spec and non-text files."""
     filtered_paths = []
@@ -76,18 +90,25 @@ def build_code_context(file_list: list[str], base_dir: str = ".") -> str:
     """
     spec = load_gitignore(base_dir)
 
-    all_files = []
-    for pattern in file_list:
-        all_files.extend(glob.glob(pattern, recursive=True))
+    # Get complete project tree (like tree --gitignore)
+    all_project_files = get_all_project_files(base_dir)
+    filtered_all_files = filter_paths(all_project_files, spec, base_dir)
+    complete_tree = build_file_tree(filtered_all_files, base_dir)
 
-    unique_files = sorted(list(set(all_files)))
+    # Handle selected files from file_list
+    if file_list:
+        selected_files = []
+        for pattern in file_list:
+            selected_files.extend(glob.glob(pattern, recursive=True))
 
-    filtered_files = filter_paths(unique_files, spec, base_dir)
+        unique_selected_files = sorted(list(set(selected_files)))
+        filtered_selected_files = filter_paths(unique_selected_files, spec, base_dir)
 
-    if not filtered_files:
-        return "No files to display. Check your `file_list` and `.gitignore`."
-
-    file_tree = build_file_tree(filtered_files, base_dir)
-    file_blocks = build_file_blocks(filtered_files, base_dir)
-
-    return f"<file_tree>\n{file_tree}\n</file_tree>\n\n{file_blocks}"
+        if filtered_selected_files:
+            file_blocks = build_file_blocks(filtered_selected_files, base_dir)
+            return f"<file_tree>\n{complete_tree}\n</file_tree>\n\n{file_blocks}"
+        else:
+            return f"<file_tree>\n{complete_tree}\n</file_tree>\n\nNo files to display from file_list. Check your patterns and .gitignore."
+    else:
+        # No file_list provided, just show the tree
+        return f"<file_tree>\n{complete_tree}\n</file_tree>\n\nNo specific files selected. Use file_list parameter to include file contents."
